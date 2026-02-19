@@ -1,0 +1,14 @@
+{
+  "name": "clean-affinity-help-bot",
+  "version": "1.0.0",
+  "description": "Slack help bot for Clean Affinity techs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@slack/bolt": "^3.21.1"
+  }
+}
