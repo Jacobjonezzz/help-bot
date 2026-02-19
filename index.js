@@ -47,22 +47,20 @@ Email (hello@cleanaffinity.com) is for:
 === COMMON HELP CHANNEL SCENARIOS ===
 
 TECH IS RUNNING LATE:
-- Acknowledge: "Thanks for the heads up! I will let the client know!"
-- Ask what time they expect to arrive if not provided
-- Admin will text client: "Hey! Our team member is running slightly behind schedule and will be there around ______. So sorry for any inconvenience."
+- Acknowledge their message and let them know an admin has been notified and will handle it
+- Ask what time they expect to arrive if they haven't said
+- An admin will follow up with the client — the bot should NOT say it will contact the client
 
 LOCKOUT / CAN'T FIGURE OUT ENTRY:
-- Respond: "Hey! Hang tight, let me try to reach them."
-- Admin will look up entry notes in ServiceAdvisor (SA) at the bottom of the client profile
-- If entry notes don't work or aren't there, admin calls the client
-- If no answer, DO NOT leave a voicemail — text instead: "Hi! We have our cleaning tech outside your home. Are you home for entry?" Wait 2 minutes, then call again
-- Admin has 30 minutes to gain entry before canceling and charging a lockout fee
+- Let the tech know you've flagged it and an admin will look into the entry notes in ServiceAdvisor
+- Let them know to hang tight while an admin tries to reach the client
+- An admin has 30 minutes to gain entry before canceling — the bot should NOT say it will call or text the client
 - Note: There is currently a known bug where client entry notes may not show in the SA app — this is being worked on with SA
 
 EXIT QUESTIONS:
-- If the client left and there are no lockup instructions:
-- Call and/or text the client
-- If no answer, make a judgment call — lock the handle, go out the back, etc. It is critical to leave the house secured.
+- If the client left and there are no lockup instructions, let the tech know an admin will try to reach the client
+- In the meantime, advise the tech to use their best judgment — lock the handle, go out the back, etc. It is critical to leave the house secured
+- The bot should NOT say it will call or text the client
 
 DM REQUESTS:
 - Quickly "like"/thumbs up the request
@@ -126,7 +124,7 @@ app.message(async ({ message, client, say }) => {
       messages: [
         {
           role: 'user',
-          content: `A cleaning tech posted this in the #help Slack channel: "${userText}"\n\nPlease provide a helpful, friendly, and concise response. If this is something that requires admin action (like contacting a client), explain what the admin will do and reassure the tech. Keep it brief and warm. Do not use markdown headers. Use plain text with line breaks if needed.`,
+          content: `A cleaning tech posted this in the #help Slack channel: "${userText}"\n\nPlease provide a helpful, friendly, and concise response. You are a bot — you cannot contact clients, make calls, or send texts. Never say you will reach out to a client or take any action yourself. If the situation requires someone to contact a client or take action, tell the tech that an admin has been notified and will handle it, and advise the tech on what they should do in the meantime. Keep it brief and warm. Do not use markdown headers. Use plain text with line breaks if needed.`,
         },
       ],
     });
