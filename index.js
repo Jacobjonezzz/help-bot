@@ -10,7 +10,6 @@ const app = new App({
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const ADMIN_USER_ID = process.env.ADMIN_SLACK_USER_ID; // e.g. U012AB3CD
 const HELP_CHANNEL_ID = process.env.HELP_CHANNEL_ID;   // e.g. C012AB3CD
 
 const KNOWLEDGE_BASE = `
@@ -307,6 +306,16 @@ QUALITY CHECKS:
 - Keep notifications on so you can unlock the door for them.
 - Self quality check: After each room, turn around, point at each task, say it aloud, mentally clean around the room in 60 seconds.
 
+VACUUM TROUBLESHOOTING:
+If a tech says their vacuum isn't working, is making a weird noise, has lost suction, or seems broken, walk them through this checklist in a friendly way:
+• Make sure all connections are secure — check both the top and bottom of the vacuum where pieces connect
+• Check all the tubes and hoses to make sure nothing is loose or disconnected
+• Look for a clog — check the hose, the bottom brush roll area, and anywhere debris could be stuck
+• Empty or check the canister/bag — if it's full, suction will drop significantly
+• Check the brush roll at the bottom — hair and debris can wrap around it and stop it from spinning (use the razor blade to cut it free)
+• Make sure the filters are seated properly
+If none of that works, let the tech know to flag it at the next Tuesday inventory so a manager can take a look.
+
 === COMMUNICATION CHANNELS ===
 The #help channel is for:
 - Parking questions
@@ -544,7 +553,11 @@ app.message(async ({ message, client, say }) => {
       messages: [
         {
           role: 'user',
-          content: `A cleaning tech posted this in the #help Slack channel: "${userText}"\n\nPlease provide a helpful, friendly, and concise response. You are a bot — you cannot contact clients, make calls, or send texts. Never say you will reach out to a client or take any action yourself. If the situation requires someone to contact a client or take action, tell the tech that an admin has been notified and will handle it, and advise the tech on what they should do in the meantime. Keep it brief and warm. Do not use markdown headers. Use plain text with line breaks if needed.\n\nIMPORTANT: If you are unsure how to answer or the question is outside your knowledge, respond only with exactly this text and nothing else: NEEDS_ADMIN`,
+          content: `A cleaning tech posted this in the #help Slack channel: "${userText}"\n\nPlease provide a helpful, friendly, and concise response. You are a bot — you cannot contact clients, make calls, or send texts. Never say you will reach out to a client or take any action yourself. If the situation requires someone to contact a client or take action, tell the tech that an admin has been notified and will handle it, and advise the tech on what they should do in the meantime. Keep it brief and warm. Do not use markdown headers. Use plain text with line breaks if needed.\n\nIMPORTANT: If you are unsure how to answer or the question is outside your knowledge, respond only with exactly this text and nothing else: NEEDS_ADMIN
+
+NEVER say anything about:
+- Rescheduling jobs or pushing back cleans — that is always handled by the admin team, never suggest it yourself
+- Taking breaks or suggesting the tech take a break — that is the tech's own business`,
         },
       ],
     });
