@@ -14,7 +14,65 @@ const ADMIN_USER_ID = process.env.ADMIN_SLACK_USER_ID; // e.g. U012AB3CD
 const HELP_CHANNEL_ID = process.env.HELP_CHANNEL_ID;   // e.g. C012AB3CD
 
 const KNOWLEDGE_BASE = `
-You are a helpful assistant for cleaning technicians at Clean Affinity. You help answer questions that techs post in the #help Slack channel. Use the following company guidelines to answer questions accurately and helpfully. You have two knowledge bases: communication/scheduling guidelines AND the full cleaning manual. Use both to answer questions.
+You are the helpful admin assistant for Clean Affinity, responding to cleaning technicians in the #help Slack channel.
+
+TONE AND STYLE RULES — follow these every single response:
+- Warm, neutral, and friendly — not overly bubbly, not robotic
+- Short and easy to understand — get to the point quickly, no long paragraphs
+- Use emojis naturally, like a real person would — not on every sentence, but when it fits (👍 🙏 😊 ✅ 👋)
+- Use exclamation points when the moment calls for it, but don't overdo it
+- Never use formal or corporate language like "certainly", "of course", "I'd be happy to", "please don't hesitate"
+- Never use bullet points or numbered lists unless giving step-by-step instructions
+- Sound like a real team member, not a customer service bot
+- Keep responses to 2-4 sentences max whenever possible
+
+REAL EXAMPLES OF HOW WE RESPOND — match this tone and style exactly:
+
+Tech: "ETA 8:05 to Megan's"
+Us: "Good morning Ben, Thank you for letting us know"
+
+Tech: "ETA 8:30"
+Us: "Good morning Deaven, Thank you for letting us know."
+
+Tech: "I'm stuck in construction, might be a little behind to Connie"
+Us: "Thank you for letting us know! I will update her"
+
+Tech: "I forgot to end my first job, left a comment"
+Us: "Thank you"
+
+Tech: "Can you let Thomas know we're about done?"
+Us: "I'll let him know"
+
+Tech: "Can you let Holly know we are here?"
+Us: "I'll let her know"
+
+Tech: "Could we reach out to Ramona and see if I could start a little early at 12:15?"
+Us: "I'll ask"
+
+Tech: "Can I get my 12:00 pushed back to 12:30 so I can take a quick break and it's a 30 min drive?"
+Us: "I'll let them know"
+
+Tech: "Could we push my next clean to 12:30?"
+Us: "I'll let them know"
+
+Tech: "Could I please get my schedule blocked at 2 cleans today?"
+Us: "Hi Ethan, I'll see what we can do!"
+
+Tech: "Am I okay to start in the house before my teammate gets here?"
+Us: "Yes you can start now and your teammate can join when they get there!"
+
+Tech: "Morning! I'm at Megan's and no one has come to the door. I didn't see anything in the notes about a key"
+Us: "I'll give her a call" (then admin handles it)
+
+KEY PATTERNS TO NOTICE:
+- Use the tech's first name when starting a morning reply ("Good morning Sarah,")
+- "I'll let them know" is the go-to for client notification requests — short and confident
+- "I'll ask" for start time change requests
+- "Thank you" or "Thank you for letting us know" for FYI updates like clock-in issues
+- Don't over-explain — one sentence is usually enough
+- Never say what you CAN'T do, only what you WILL do
+
+Use the following company guidelines to answer questions accurately.
 
 === CLEANING MANUAL ===
 
@@ -347,7 +405,7 @@ app.message(async ({ message, client, say }) => {
   // 1. Sensitive topics — redirect to human DM
   if (isSensitiveTopic(userText)) {
     await say({
-      text: `Hey <@${message.user}>! This sounds like something that needs a personal touch from our admin team. 🙏\n\nPlease *request a DM* here in the channel and someone will reach out to you shortly. Don't initiate a direct message yourself — post here so whoever is available can help you soonest!\n\n<@${ADMIN_USER_ID}> — heads up, a tech may need assistance with a sensitive matter.`,
+      text: `Hey <@${message.user}>! This sounds like something that needs a personal touch from our admin team. 🙏\n\nPlease *request a DM* here in the channel and someone will reach out to you shortly. Don't initiate a direct message yourself — post here so whoever is available can help you soonest!\n\n<!subteam^S0AG67FEX4L> — heads up, a tech may need assistance with a sensitive matter.`,
       thread_ts: message.ts,
     });
     return;
@@ -360,7 +418,7 @@ app.message(async ({ message, client, say }) => {
 
     if (isSignificantlyLate) {
       await say({
-        text: `Thanks for letting us know! We'll reach out! 🙏\n\n<@${ADMIN_USER_ID}> — heads up ⬆️`,
+        text: `Thanks for letting us know! The team is on it! 😊\n\n<!subteam^S0AG67FEX4L> — heads up ⬆️`,
         thread_ts: message.ts,
       });
     } else {
@@ -375,7 +433,7 @@ app.message(async ({ message, client, say }) => {
   // 3. Entry/lockout questions — give checklist and ping admin
   if (isEntryQuestion(userText)) {
     await say({
-      text: `Hey <@${message.user}>! Here are a few things to try:\n\n1. Is the door unlocked? Give the handle a try!\n2. Check for a key under the mat, in a lockbox, or above the door frame\n3. Double-check your job notes in the SA app for entry instructions\n4. Make sure the doorbell is working — try knocking as well\n\nWe're pinging the admin team now to help you get in! 🙏\n\n<@${ADMIN_USER_ID}> — entry issue ⬆️`,
+      text: `Hey <@${message.user}>! Here are a few things to try:\n\n1. Is the door unlocked? Give the handle a try!\n2. Check for a key under the mat, in a lockbox, or above the door frame\n3. Double-check your job notes in the SA app for entry instructions\n4. Make sure the doorbell is working — try knocking as well\n\nThe team is on it and will help you get in! 🙏\n\n<!subteam^S0AG67FEX4L> — entry issue ⬆️`,
       thread_ts: message.ts,
     });
     return;
@@ -384,7 +442,7 @@ app.message(async ({ message, client, say }) => {
   // 4. Messages that need admin to contact a client or take action
   if (needsAdminAction(userText)) {
     await say({
-      text: `Got it! Flagging the admin team for you now 👋\n\n<@${ADMIN_USER_ID}> ⬆️`,
+      text: `Got it! The team is on it! 👍\n\n<!subteam^S0AG67FEX4L> ⬆️`,
       thread_ts: message.ts,
     });
     return;
@@ -423,7 +481,7 @@ app.message(async ({ message, client, say }) => {
     await client.chat.update({
       channel: message.channel,
       ts: thinkingMsg.ts,
-      text: `Having trouble right now — please wait for an admin to assist! <@${ADMIN_USER_ID}>`,
+      text: `Having trouble right now — please wait for an admin to assist! <!subteam^S0AG67FEX4L>`,
     });
   }
 });
