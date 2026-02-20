@@ -274,21 +274,64 @@ const SENSITIVE_KEYWORDS = [
   'dangerous', 'unsafe', 'abusive', 'payroll dispute', 'not paid'
 ];
 
+// Patterns that require admin action — bot acknowledges and tags admin
+const ADMIN_ACTION_PATTERNS = [
+  /can (you|we) (ask|let|tell|notify|inform|reach out|contact)/i,
+  /please (ask|let|tell|notify|inform|reach out|contact)/i,
+  /could (you|we) (ask|let|tell|notify|inform|reach out|contact)/i,
+  /let .+ know/i,
+  /ask .+ if/i,
+  /tell .+ (that|i|we)/i,
+  /can (i|we get .+ pushed)/i,
+  /push .+ (back|to)/i,
+  /need to push/i,
+  /going to push/i,
+  /is there anywhere (else )?i can help/i,
+  /anywhere (else )?i can be of help/i,
+  /can i (get )?a dm/i,
+  /could i (get )?a dm/i,
+  /can i start .+ (at|early)/i,
+  /could i start .+ (at|early)/i,
+  /can (i|we) start .+ (at|early)/i,
+];
+
+// Extract minutes late from message text
+function extractMinutesLate(text) {
+  const minMatch = text.match(/(\d+)\s*(?:minutes?|mins?)/i);
+  if (minMatch) return parseInt(minMatch[1]);
+  const hrMatch = text.match(/(\d+)\s*(?:hours?|hrs?)/i);
+  if (hrMatch) return parseInt(hrMatch[1]) * 60;
+  if (/an hour/i.test(text)) return 60;
+  return null;
+}
+
+function isRunningLate(text) {
+  // "going over" means running long on a job — not the same as being late to a client
+  if (/go(ing)? over/i.test(text)) return false;
+  return /(?:running|going to be|will be|might be|probably|i'?m).{0,30}(?:late|behind|a few minutes|slow)/i.test(text)
+    || /(?:eta|e\.t\.a\.)\s+\d/i.test(text)
+    || /late to my next/i.test(text)
+    || /(\d+)\s*(?:minutes?|mins?|hours?|hrs?) (late|behind)/i.test(text);
+}
+
 function isSensitiveTopic(text) {
   const lower = text.toLowerCase();
   return SENSITIVE_KEYWORDS.some(keyword => lower.includes(keyword));
 }
 
+function needsAdminAction(text) {
+  return ADMIN_ACTION_PATTERNS.some(pattern => pattern.test(text));
+}
+
 // Only respond in the #help channel
 app.message(async ({ message, client, say }) => {
-  // Ignore bot messages and messages not in the help channel
   if (message.bot_id) return;
   if (message.channel !== HELP_CHANNEL_ID) return;
   if (!message.text) return;
 
   const userText = message.text;
 
-  // Check for sensitive topics first
+  // 1. Sensitive topics — redirect to human DM
   if (isSensitiveTopic(userText)) {
     await say({
       text: `Hey <@${message.user}>! This sounds like something that needs a personal touch from our admin team. 🙏\n\nPlease *request a DM* here in the channel and someone will reach out to you shortly. Don't initiate a direct message yourself — post here so whoever is available can help you soonest!\n\n<@${ADMIN_USER_ID}> — heads up, a tech may need assistance with a sensitive matter.`,
@@ -297,11 +340,39 @@ app.message(async ({ message, client, say }) => {
     return;
   }
 
-  // Let the tech know we're looking into it
+  // 2. Running late — short response if <=15 min, fuller response + tag admin if >15 min
+  if (isRunningLate(userText)) {
+    const minutes = extractMinutesLate(userText);
+    const isSignificantlyLate = minutes === null || minutes > 15;
+
+    if (isSignificantlyLate) {
+      await say({
+        text: `Thanks for letting us know! We'll reach out! 🙏\n\n<@${ADMIN_USER_ID}> — heads up ⬆️`,
+        thread_ts: message.ts,
+      });
+    } else {
+      await say({
+        text: `Thanks for letting us know! 👍`,
+        thread_ts: message.ts,
+      });
+    }
+    return;
+  }
+
+  // 3. Messages that need admin to contact a client or take action
+  if (needsAdminAction(userText)) {
+    await say({
+      text: `Got it! Flagging the admin team for you now 👋\n\n<@${ADMIN_USER_ID}> ⬆️`,
+      thread_ts: message.ts,
+    });
+    return;
+  }
+
+  // 4. Everything else — ask Claude
   const thinkingMsg = await client.chat.postMessage({
     channel: message.channel,
     thread_ts: message.ts,
-    text: `Hey <@${message.user}>! Let me look into that for you... 🔍`,
+    text: `On it! 🔍`,
   });
 
   try {
@@ -319,7 +390,6 @@ app.message(async ({ message, client, say }) => {
 
     const botReply = response.content[0].text;
 
-    // Update the thinking message with the real answer
     await client.chat.update({
       channel: message.channel,
       ts: thinkingMsg.ts,
@@ -331,7 +401,7 @@ app.message(async ({ message, client, say }) => {
     await client.chat.update({
       channel: message.channel,
       ts: thinkingMsg.ts,
-      text: `Hey <@${message.user}>, I'm having trouble processing that right now. Please wait for an admin to assist you! <@${ADMIN_USER_ID}>`,
+      text: `Having trouble right now — please wait for an admin to assist! <@${ADMIN_USER_ID}>`,
     });
   }
 });
