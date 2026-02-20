@@ -323,6 +323,19 @@ function needsAdminAction(text) {
   return ADMIN_ACTION_PATTERNS.some(pattern => pattern.test(text));
 }
 
+function isEntryQuestion(text) {
+  return /how do i (get in|enter|access|open|unlock)/i.test(text)
+    || /can'?t (get in|get into|figure out (the )?entry|find (the )?key|open (the )?door)/i.test(text)
+    || /no (key|entry|answer|one (is |)home|one (is |)here)/i.test(text)
+    || /door (is locked|won'?t open|is closed|code)/i.test(text)
+    || /can'?t (find|figure out) (how to get in|entry|the key|the code)/i.test(text)
+    || /locked out/i.test(text)
+    || /no answer (at|here)/i.test(text)
+    || /rang (the )?doorbell/i.test(text)
+    || /knocked (and|but) no (one|answer)/i.test(text)
+    || /entry (code|notes|instructions)/i.test(text);
+}
+
 // Only respond in the #help channel
 app.message(async ({ message, client, say }) => {
   if (message.bot_id) return;
@@ -359,7 +372,16 @@ app.message(async ({ message, client, say }) => {
     return;
   }
 
-  // 3. Messages that need admin to contact a client or take action
+  // 3. Entry/lockout questions — give checklist and ping admin
+  if (isEntryQuestion(userText)) {
+    await say({
+      text: `Hey <@${message.user}>! Here are a few things to try:\n\n1. Is the door unlocked? Give the handle a try!\n2. Check for a key under the mat, in a lockbox, or above the door frame\n3. Double-check your job notes in the SA app for entry instructions\n4. Make sure the doorbell is working — try knocking as well\n\nWe're pinging the admin team now to help you get in! 🙏\n\n<@${ADMIN_USER_ID}> — entry issue ⬆️`,
+      thread_ts: message.ts,
+    });
+    return;
+  }
+
+  // 4. Messages that need admin to contact a client or take action
   if (needsAdminAction(userText)) {
     await say({
       text: `Got it! Flagging the admin team for you now 👋\n\n<@${ADMIN_USER_ID}> ⬆️`,
