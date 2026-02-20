@@ -34,6 +34,9 @@ Us: "Good morning Ben, Thank you for letting us know"
 Tech: "ETA 8:30"
 Us: "Good morning Deaven, Thank you for letting us know."
 
+Tech: "Eta 8:15 to Lisa!"
+Us: "Good morning Indigo, Thank you for letting us know"
+
 Tech: "I'm stuck in construction, might be a little behind to Connie"
 Us: "Thank you for letting us know! I will update her"
 
@@ -45,6 +48,9 @@ Us: "I'll let him know"
 
 Tech: "Can you let Holly know we are here?"
 Us: "I'll let her know"
+
+Tech: "Can you let Erin know I'm here"
+Us: "I'll let them know"
 
 Tech: "Could we reach out to Ramona and see if I could start a little early at 12:15?"
 Us: "I'll ask"
@@ -58,19 +64,55 @@ Us: "I'll let them know"
 Tech: "Could I please get my schedule blocked at 2 cleans today?"
 Us: "Hi Ethan, I'll see what we can do!"
 
-Tech: "Am I okay to start in the house before my teammate gets here?"
-Us: "Yes you can start now and your teammate can join when they get there!"
+Tech: "Can I start Andrew's at 11?"
+Us: "I'll ask"
 
-Tech: "Morning! I'm at Megan's and no one has come to the door. I didn't see anything in the notes about a key"
-Us: "I'll give her a call" (then admin handles it)
+Tech: "Can I start Weidler at 12?"
+Us: "I'll ask"
+
+Tech: "Can you guys let me know when you add a new job to my schedule?"
+Us: "I'll send you a DM"
+
+Tech: "Hi I'm at Kendra's I've knocked but no one's answered could we let them know I'm here?"
+Us: "I'll give them a call"
+
+Tech: "Putting in the code I was given but it just beeps at me and doesn't unlock"
+Us: Tag admin team and let the tech know the team is on it
+
+Tech: "Can I push to 12:30 so I can get something to eat?"
+Us: "Hi Kelli, I'll let them know"
+
+Tech: "Can we please let Ann know we consolidated the trash but I forgot to take it to the garbage bin. Please apologize for me."
+Us: "I'll let her know, Thanks Misty"
+
+Tech: "Please let Ashley know we're heading out and the door is locked, key back in the lockbox"
+Us: "Okay!"
+
+Tech: "I'm running a little behind, I'm going to be a little bit late to Ellen I should be there by 3:30"
+Us: "Hi Joselyn, Thank you for letting us know."
+
+Tech: "Hello, can I keep my schedule the same please? I'm like 5 minutes away from home"
+Us: "Thank you for letting us know! I'll mark you off"
+
+Tech: "Will someone call Dale and tell him I'll be there at 1:00?"
+Us: "Yep!"
+
+Tech: "We're going to need until 11, all of the floors are atrociously dirty"
+Us: "Thank you for letting us know. Do you have any pictures?" (always ask for pictures if they need more time and haven't sent any)
+
+Tech: "Gonna need some more time here. Fridge is done, kitchen is about 60% finished."
+Us: "Hi Grace, Thank you for letting us know. Do you have any pictures?"
 
 KEY PATTERNS TO NOTICE:
-- Use the tech's first name when starting a morning reply ("Good morning Sarah,")
+- Use the tech's first name when it's a morning message or a personal update ("Good morning Sarah," / "Hi Kelli,")
 - "I'll let them know" is the go-to for client notification requests — short and confident
-- "I'll ask" for start time change requests
+- "I'll ask" for start time change requests — never promise a yes
+- "Yep!" or "Okay!" for simple confirmations
 - "Thank you" or "Thank you for letting us know" for FYI updates like clock-in issues
+- If a tech needs MORE TIME and hasn't sent pictures, ALWAYS ask for pictures
 - Don't over-explain — one sentence is usually enough
 - Never say what you CAN'T do, only what you WILL do
+- Always tag the admin team so a human can follow through
 
 Use the following company guidelines to answer questions accurately.
 
@@ -334,6 +376,10 @@ const SENSITIVE_KEYWORDS = [
 
 // Patterns that require admin action — bot acknowledges and tags admin
 const ADMIN_ACTION_PATTERNS = [
+  /turned me away/i,
+  /client (won'?t let me in|doesn'?t want me|sent me away|turned me away|said (to )?leave|asked me to leave)/i,
+  /client is (upset|angry|mad|rude|unhappy|frustrated)/i,
+  /(refused|refusing) (entry|to let me in|to open)/i,
   /can (you|we) (ask|let|tell|notify|inform|reach out|contact)/i,
   /please (ask|let|tell|notify|inform|reach out|contact)/i,
   /could (you|we) (ask|let|tell|notify|inform|reach out|contact)/i,
@@ -430,6 +476,31 @@ app.message(async ({ message, client, say }) => {
     return;
   }
 
+  // 2b. Needs more time — ask for pictures and tag admin
+  const needsMoreTime = /(?:need|going to need|gonna need|will need).{0,20}(?:more time|extra time|longer|until \d)/i.test(userText)
+    || /(?:going over|going to go over|still working|not going to make it|running over)/i.test(userText)
+    || /(?:add(?:ing)? time|push(?:ing)? (?:the )?(?:time|clean|job))/i.test(userText);
+  const hasPictures = /(?:IMG_|photo|pic|picture|image|attached|here'?s a)/i.test(userText);
+
+  if (needsMoreTime) {
+    if (hasPictures) {
+      await say({
+        text: `Thank you for letting us know! The team is on it 👍
+
+<!subteam^S0AG67FEX4L> ⬆️`,
+        thread_ts: message.ts,
+      });
+    } else {
+      await say({
+        text: `Thank you for letting us know! Do you have any pictures? 📸
+
+<!subteam^S0AG67FEX4L> ⬆️`,
+        thread_ts: message.ts,
+      });
+    }
+    return;
+  }
+
   // 3. Entry/lockout questions — give checklist and ping admin
   if (isEntryQuestion(userText)) {
     await say({
@@ -441,10 +512,20 @@ app.message(async ({ message, client, say }) => {
 
   // 4. Messages that need admin to contact a client or take action
   if (needsAdminAction(userText)) {
-    await say({
-      text: `Got it! The team is on it! 👍\n\n<!subteam^S0AG67FEX4L> ⬆️`,
-      thread_ts: message.ts,
-    });
+    // Detect "I'm done / all wrapped up / finished" messages
+    const isDone = /(?:all done|all wrapped up|finished|i'?m done|just finished|heading out|locked up|on my way out|leaving now)/i.test(userText);
+
+    if (isDone) {
+      await say({
+        text: `Nice work! We'll let them know 😊\n\n<!subteam^S0AG67FEX4L> ⬆️`,
+        thread_ts: message.ts,
+      });
+    } else {
+      await say({
+        text: `Got it! The team is on it! 👍\n\n<!subteam^S0AG67FEX4L> ⬆️`,
+        thread_ts: message.ts,
+      });
+    }
     return;
   }
 
@@ -463,12 +544,22 @@ app.message(async ({ message, client, say }) => {
       messages: [
         {
           role: 'user',
-          content: `A cleaning tech posted this in the #help Slack channel: "${userText}"\n\nPlease provide a helpful, friendly, and concise response. You are a bot — you cannot contact clients, make calls, or send texts. Never say you will reach out to a client or take any action yourself. If the situation requires someone to contact a client or take action, tell the tech that an admin has been notified and will handle it, and advise the tech on what they should do in the meantime. Keep it brief and warm. Do not use markdown headers. Use plain text with line breaks if needed.`,
+          content: `A cleaning tech posted this in the #help Slack channel: "${userText}"\n\nPlease provide a helpful, friendly, and concise response. You are a bot — you cannot contact clients, make calls, or send texts. Never say you will reach out to a client or take any action yourself. If the situation requires someone to contact a client or take action, tell the tech that an admin has been notified and will handle it, and advise the tech on what they should do in the meantime. Keep it brief and warm. Do not use markdown headers. Use plain text with line breaks if needed.\n\nIMPORTANT: If you are unsure how to answer or the question is outside your knowledge, respond only with exactly this text and nothing else: NEEDS_ADMIN`,
         },
       ],
     });
 
-    const botReply = response.content[0].text;
+    const botReply = response.content[0].text.trim();
+
+    // If Claude doesn't know what to do, tag the admin team
+    if (botReply === 'NEEDS_ADMIN') {
+      await client.chat.update({
+        channel: message.channel,
+        ts: thinkingMsg.ts,
+        text: `Got it! The team is on it! 👍\n\n<!subteam^S0AG67FEX4L> ⬆️`,
+      });
+      return;
+    }
 
     await client.chat.update({
       channel: message.channel,
